@@ -87,8 +87,19 @@ mkdir -p "<vault>/<课程>/<NN>-<课件标题>/attachments"
 
 1. 只使用该节页码范围里的内容，**不编造**课件没讲的结论。
 2. 按 `note-format.md` 写成 `# 标题` + 多个 `### 子主题`，表格/列表/公式优先，不写大段散文。
-3. 例题、整页题目、无法用文字重建的图 → 在对应位置单独一行写 `【课件截图：第N页】`（每节最多 3 张，页码必须在本节范围内）。
-4. 为每个截图占位渲染 PNG（同一页只渲染一次）：
+3. 题目必带原题：例题、习题、自测题的题干、条件、选项、题图完整抄录，再给解答；长题用 `> [!example]` / `> [!question]`。
+4. 过程、对比、算例类重难点主动自绘图解（表格/代码块/ASCII），不要只放截图。
+5. 例题、整页题目、无法用文字重建的图 → 在对应位置单独一行写 `【课件截图：第N页】`（每节最多 3 张，页码必须在本节范围内）。**不要截**装饰图、二维码/签到码、校徽/logo 模板、与正文无关的纯照片。
+
+选截图前先生成接触表，一次看清多页再决定：
+
+```bash
+python ~/.claude/skills/courseware-to-obsidian/scripts/courseware_tool.py contact "<课件路径>" "3,7-12"
+```
+
+命令会打印临时 PNG 路径，用 Read 看这一张；再对入选页执行 `render`。
+
+6. 为每个截图占位渲染 PNG（同一页只渲染一次）：
 
 ```bash
 python ~/.claude/skills/courseware-to-obsidian/scripts/courseware_tool.py render "<课件路径>" 12 "<vault>/<课程>/<NN>-<课件标题>/attachments/<源文件名主干>_p12.png"
@@ -103,12 +114,14 @@ python ~/.claude/skills/courseware-to-obsidian/scripts/courseware_tool.py render
 图片课件需要保留原图时，用 `render "<图片路径>" 1 "<目标.png>"`（会复制原图）。
 md / txt 不生成截图；渲染失败（没有 LibreOffice/Office）就删掉占位，不要留下标记。
 
-5. 文件末尾加上一节/下一节导航（仓库相对双链 + 可读别名）。
-6. 每写完 2~3 节就落盘一次，不要憋到最后；写完不要回读文件。
+7. 文件末尾加上一节/下一节导航（仓库相对双链 + 可读别名）。
+8. 每写完 2~3 节就落盘一次，不要憋到最后；写完不要回读文件。
 
 ## 4. 写课件目录页
 
 `<vault>/<课程>/<NN>-<课件标题>/<NN>-<课件标题>.md` —— folder-note，名字与文件夹相同。包含 frontmatter、`# 📗 课件标题`、返回课程总目录的链接、各节双链目录。格式见 `references/note-format.md`。
+
+用户要求时才追加「本章小结 + 自测题」，默认不写。
 
 ## 5. 生成/刷新课程总目录 + 关系图
 
@@ -126,7 +139,15 @@ python ~/.claude/skills/courseware-to-obsidian/scripts/courseware_tool.py finali
 python ~/.claude/skills/courseware-to-obsidian/scripts/courseware_tool.py check "<vault>/<课程>"
 ```
 
-必须修到 `problems: 0`：目录页齐全、无残留截图占位、双链都能解析、图片都存在。最后报告：课件夹路径、节数、截图数、总目录路径。
+必须修到 `problems: 0`：目录页齐全、无残留截图占位、双链和 `#标题` 锚点都能解析、图片都存在。最后报告：课件夹路径、节数、截图数、总目录路径。
+
+## 可选：本章小结与自测题（仅用户要求时）
+
+- 默认不写。
+- 用户提出后，在课件目录页末尾追加 `## 本章小结` 和 `## 自测题`。
+- 小结最多 8 条，只用本课件讲过的结论。
+- 自测题 3~6 道，每题写完整题面，可脱离课件作答；答案放在折叠块 `> [!success]- 答案`。
+- 格式见 `references/note-format.md`。
 
 ## 边界
 

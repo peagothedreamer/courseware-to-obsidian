@@ -13,6 +13,12 @@
    └─ attachments/
 ```
 
+## 能力
+
+- `contact` 接触表：选图前一次看清多页，不用逐页读图。
+- `check` 校验死链、失效锚点、破图和残留截图占位。
+- 可选：本章小结与自测题。需要时向 Claude 提出，默认不生成。
+
 ## 安装
 
 ```bash
@@ -42,6 +48,13 @@ python -m pip install python-pptx pymupdf python-docx
 cd courseware-to-obsidian
 python skills/courseware-to-obsidian/scripts/selftest.py
 ```
+
+## 来源
+
+部分代码（`graph_config.py`、`ppt_parser.py`、`pdf_parser.py`）来自
+[XY-wc/ppt-to-obsidian](https://github.com/XY-wc/ppt-to-obsidian)，
+Copyright (c) 2026 The PPT2Obsidian Contributors，MIT License。
+主要改动：移除 GUI 与 LLM 依赖，改为 Claude Code skill 的命令行流程。
 
 ## 说明
 

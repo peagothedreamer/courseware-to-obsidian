@@ -307,6 +307,95 @@ def cmd_render(args):
     print(args.out)
 
 
+# ---------------------------------------------------------------- contact sheet
+
+_CONTACT_MAX_PAGES = 40
+
+
+def _page_count(src: str) -> int:
+    if is_image(src):
+        return 1
+    if src.lower().endswith(TEXT_EXTS):
+        return 0
+    try:
+        import pymupdf
+    except Exception:
+        import fitz as pymupdf
+    pdf = _to_pdf(src)
+    doc = pymupdf.open(pdf)
+    try:
+        return doc.page_count
+    finally:
+        doc.close()
+
+
+def _contact_sheet(src_pdf: str, pages, out_png: str, cols: int, width: int) -> bool:
+    try:
+        import pymupdf
+    except Exception:
+        import fitz as pymupdf
+    src = pymupdf.open(src_pdf)
+    try:
+        thumbs = [(n, src[n - 1].get_pixmap(dpi=60))
+                  for n in pages if 1 <= n <= src.page_count]
+    finally:
+        src.close()
+    if not thumbs:
+        return False
+    # ponytail: one cell ratio for the whole sheet; decks are uniform, revisit if mixed sizes distort
+    ratio = max(p.height / p.width for _, p in thumbs)
+    cell_h = int(width * ratio)
+    label_h, pad = 20, 10
+    rows = (len(thumbs) + cols - 1) // cols
+    sheet = pymupdf.open()
+    page = sheet.new_page(width=cols * width + (cols + 1) * pad,
+                          height=rows * (cell_h + label_h) + (rows + 1) * pad)
+    for i, (n, pix) in enumerate(thumbs):
+        r, c = divmod(i, cols)
+        x = pad + c * (width + pad)
+        y = pad + r * (cell_h + label_h + pad)
+        rect = pymupdf.Rect(x, y, x + width, y + cell_h)
+        page.insert_image(rect, pixmap=pix)
+        page.draw_rect(rect, color=(0.7, 0.7, 0.7), width=0.5)
+        page.insert_text((x, y + cell_h + 14), f"p{n}", fontsize=11)
+    page.get_pixmap(dpi=80).save(out_png)
+    sheet.close()
+    return os.path.isfile(out_png) and os.path.getsize(out_png) > 500
+
+
+def cmd_contact(args):
+    total = _page_count(args.file)
+    if total <= 0:
+        print("contact needs a paged source (PPT/PDF/Word/image)", file=sys.stderr)
+        sys.exit(1)
+    pages = sorted(parse_pages(args.pages, total))
+    if not pages:
+        print(f"no valid pages in range for a {total}-page source", file=sys.stderr)
+        sys.exit(1)
+    if len(pages) > _CONTACT_MAX_PAGES:
+        print(f"contact sheet supports <= {_CONTACT_MAX_PAGES} pages; split the range",
+              file=sys.stderr)
+        sys.exit(1)
+    cols = max(1, args.cols)
+    width = max(80, args.width)
+    out = args.out
+    if not out:
+        cache = os.path.join(tempfile.gettempdir(), CACHE_NAME)
+        os.makedirs(cache, exist_ok=True)
+        key = hashlib.md5(os.path.abspath(args.file).encode("utf-8")).hexdigest()[:10]
+        tag = re.sub(r"[^0-9,\-]", "", args.pages)
+        out = os.path.join(cache, f"{key}-contact-{tag}.png")
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    if is_image(args.file):
+        shutil.copyfile(args.file, out)
+        print(out)
+        return
+    if not _contact_sheet(_to_pdf(args.file), pages, out, cols, width):
+        print("contact failed", file=sys.stderr)
+        sys.exit(1)
+    print(out)
+
+
 # ---------------------------------------------------------------- vault hub
 
 COURSE_HUB_SUFFIX = " 课程总目录"
@@ -414,7 +503,8 @@ def cmd_finalize(args):
 
 # ---------------------------------------------------------------- checking
 
-_WIKILINK_RE = re.compile(r"\[\[([^\]\|#]+)(?:#[^\]\|]*)?(?:\|[^\]]*)?\]\]")
+_WIKILINK_RE = re.compile(r"\[\[([^\]\|#]*)(?:#([^\]\|]*))?(?:\|[^\]]*)?\]\]")
+_HEADING_RE = re.compile(r"^#{1,6}\s+(.*?)\s*$", re.M)
 _IMG_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 _PLACEHOLDER_RE = re.compile(r"【\s*(?:课件)?截图\s*[:：]?\s*(?:第\s*|p\s*)?\d{1,4}\s*页?\s*】|"
                              r"<!--\s*截图\s*:")
@@ -432,11 +522,20 @@ def cmd_check(args):
         md_files += [os.path.join(dirpath, f) for f in filenames if f.lower().endswith(".md")]
 
     stems = set()
+    headings = {}
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
         for f in filenames:
-            if f.lower().endswith(".md"):
-                stems.add(os.path.splitext(f)[0])
+            if not f.lower().endswith(".md"):
+                continue
+            stem = os.path.splitext(f)[0]
+            stems.add(stem)
+            try:
+                with open(os.path.join(dirpath, f), "r", encoding="utf-8") as fh:
+                    found = _HEADING_RE.findall(fh.read())
+            except OSError:
+                found = []
+            headings.setdefault(stem, set()).update(h.strip() for h in found)
 
     problems = []
     missing_index = []
@@ -464,14 +563,19 @@ def cmd_check(args):
         for m in _WIKILINK_RE.finditer(text):
             # table cells escape the alias separator as "\|"; drop that backslash
             target = m.group(1).strip().rstrip("\\").lstrip("/")
-            if not target:
-                continue
-            cand = os.path.join(root, target + ("" if target.lower().endswith(".md") else ".md"))
-            if os.path.isfile(cand):
-                continue
-            if "/" not in target and target in stems:
-                continue
-            problems.append(f"broken wikilink: {rel} -> [[{m.group(1)}]]")
+            anchor = (m.group(2) or "").strip().rstrip("\\")
+            if target:
+                cand = os.path.join(root, target + ("" if target.lower().endswith(".md") else ".md"))
+                if not (os.path.isfile(cand) or ("/" not in target and target in stems)):
+                    problems.append(f"broken wikilink: {rel} -> [[{m.group(1)}]]")
+                    continue
+                base = os.path.basename(target)
+                stem = base[:-3] if base.lower().endswith(".md") else base
+            else:
+                # [[#标题]] points at the current note
+                stem = os.path.splitext(os.path.basename(fp))[0]
+            if anchor and not anchor.startswith("^") and anchor not in headings.get(stem, set()):
+                problems.append(f"broken anchor: {rel} -> [[{m.group(1)}#{anchor}]]")
         for m in _IMG_RE.finditer(text):
             src = m.group(1).strip()
             if "://" in src or src.startswith("#"):
@@ -505,6 +609,14 @@ def main():
     p.add_argument("page", type=int)
     p.add_argument("out")
     p.set_defaults(func=cmd_render)
+
+    p = sub.add_parser("contact")
+    p.add_argument("file")
+    p.add_argument("pages", help="e.g. 3,7-12 (at most 40 pages)")
+    p.add_argument("--out")
+    p.add_argument("--cols", type=int, default=4)
+    p.add_argument("--width", type=int, default=320)
+    p.set_defaults(func=cmd_contact)
 
     p = sub.add_parser("finalize")
     p.add_argument("course_dir")

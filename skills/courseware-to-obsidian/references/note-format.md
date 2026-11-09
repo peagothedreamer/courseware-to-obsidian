@@ -97,6 +97,21 @@ Rules, in order of importance:
    Never write bare `[[焓]]` — two courses can both have an `焓` section and the graph would merge them.
 9. **Screenshot placeholders**: for example pages, full-page problems, or diagrams that cannot be rebuilt from text, put `【课件截图：第N页】` on its own line after the relevant block. Max 3 per section, page must be inside the section's page range. Ordinary text pages do not get a screenshot. Markdown / plain text sources get no screenshots.
 10. Do not output YAML inside the body, do not wrap the note in a code fence, do not add “以下是…” preamble. Body starts at `# <section title>`.
+11. **Problems keep their full prompt.** Any example, exercise, or self-test from the deck: copy the complete question first — stem, givens, options, data, and question figure — then the solution. Never answer-only or one-line paraphrase. Use a callout for long prompts:
+    ```
+    > [!example] 例题
+    > （完整题干、条件、选项）
+    ```
+12. **Tables inside callouts need a blank `>` line first.** Without it Obsidian renders raw pipe characters:
+    ```
+    > [!note] 标题
+    > 说明文字
+    >
+    > | 列1 | 列2 |
+    > |-----|-----|
+    ```
+    Tables outside callouts need no blank line.
+13. **Draw what is hard.** For processes, comparisons, and worked calculations, draw a table, code block, ASCII diagram, or LaTeX layout yourself. Screenshots complement the drawing; they do not replace it.
 
 End every section file with navigation:
 
@@ -125,6 +140,23 @@ Use a full-width space `　` between the two links. Omit a direction when there 
 
 *每节含表格/公式/要点与课件截图；节末可跳上一节/下一节。*
 ```
+
+Only when the user asks for them, append to the deck index:
+
+```markdown
+## 本章小结
+
+- 只写本课件讲过的结论，最多 8 条。
+
+## 自测题
+
+1. 完整题面，可脱离课件独立作答。
+
+> [!success]- 答案
+> 解答与关键步骤。
+```
+
+Do not add these sections by default.
 
 ## Screenshots
 

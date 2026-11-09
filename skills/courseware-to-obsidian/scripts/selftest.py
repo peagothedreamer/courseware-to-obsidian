@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Minimal self-check: python selftest.py"""
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -131,11 +132,40 @@ def test_vault_check():
         assert os.path.isfile(os.path.join(course, "测试课 课程总目录.md"))
 
         with open(os.path.join(deck, "1.1-测试.md"), "a", encoding="utf-8") as f:
+            f.write("\n[[测试课/01-第一讲/1.1-测试#1.1 测试|有效锚点]]\n")
+        good_anchor = _run("check", course, "--vault-root", vault)
+        assert good_anchor.returncode == 0, good_anchor.stdout + good_anchor.stderr
+
+        with open(os.path.join(deck, "1.1-测试.md"), "a", encoding="utf-8") as f:
+            f.write("\n[[测试课/01-第一讲/1.1-测试#不存在的标题|坏锚点]]\n")
+        bad_anchor = _run("check", course, "--vault-root", vault)
+        assert bad_anchor.returncode != 0 and "broken anchor" in bad_anchor.stdout, bad_anchor.stdout
+
+        with open(os.path.join(deck, "1.1-测试.md"), "a", encoding="utf-8") as f:
             f.write("\n[[测试课/不存在|断链]]\n")
         bad = _run("check", course, "--vault-root", vault)
         assert bad.returncode != 0 and "broken wikilink" in bad.stdout, bad.stdout
     finally:
-        import shutil
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_contact():
+    import pymupdf
+    root = tempfile.mkdtemp()
+    try:
+        pdf_path = os.path.join(root, "deck.pdf")
+        pdf = pymupdf.open()
+        for i in range(3):
+            page = pdf.new_page()
+            page.insert_text((72, 72), f"page {i + 1}", fontsize=20)
+        pdf.save(pdf_path)
+        pdf.close()
+
+        out = os.path.join(root, "sheet.png")
+        run = _run("contact", pdf_path, "1-3", "--out", out)
+        assert run.returncode == 0, run.stdout + run.stderr
+        assert os.path.isfile(out) and os.path.getsize(out) > 1000, run.stdout
+    finally:
         shutil.rmtree(root, ignore_errors=True)
 
 
@@ -145,4 +175,5 @@ if __name__ == "__main__":
     test_docx()
     test_text_and_image()
     test_vault_check()
+    test_contact()
     print("selftest ok")
