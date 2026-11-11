@@ -97,7 +97,7 @@ Rules, in order of importance:
    Never write bare `[[焓]]` — two courses can both have an `焓` section and the graph would merge them.
 9. **Screenshot placeholders**: for example pages, full-page problems, or diagrams that cannot be rebuilt from text, put `【课件截图：第N页】` on its own line after the relevant block. Max 3 per section, page must be inside the section's page range. Ordinary text pages do not get a screenshot. Markdown / plain text sources get no screenshots.
 10. Do not output YAML inside the body, do not wrap the note in a code fence, do not add “以下是…” preamble. Body starts at `# <section title>`.
-11. **Problems keep their full prompt.** Any example, exercise, or self-test from the deck: copy the complete question first — stem, givens, options, data, and question figure — then the solution. Never answer-only or one-line paraphrase. Use a callout for long prompts:
+11. **Problems keep their full prompt.** Any example or exercise (including self-tests) from the deck: copy the complete question first — stem, givens, options, data, and question figure — then the solution. Never answer-only or one-line paraphrase. Use a callout for long prompts:
     ```
     > [!example] 例题
     > （完整题干、条件、选项）
@@ -141,26 +141,19 @@ Use a full-width space `　` between the two links. Omit a direction when there 
 *每节含表格/公式/要点与课件截图；节末可跳上一节/下一节。*
 ```
 
-Only when the user asks for them, append to the deck index:
+Only when the user asks for it, append the summary to the deck index:
 
 ```markdown
 ## 本章小结
 
 - 只写本课件讲过的结论，最多 8 条。
-
-## 自测题
-
-1. 完整题面，可脱离课件独立作答。
-
-> [!success]- 答案
-> 解答与关键步骤。
 ```
 
-Do not add these sections by default.
+Do not add this section by default.
 
 ## Exercise note format (type: exercise)
 
-Use this when the user asks for 练习题 / 习题集 / 自测题 / 复习题. The exercise note is a regular section file inside the deck folder (its section number continues the deck's numbering), with the usual navigation footer.
+Use this when the user asks for 练习题 / 自测题 / 习题集 / 复习题 — these are the same kind of content. Call the note 「练习题」 and use this single format: a regular section file inside the deck folder (its section number continues the deck's numbering), with the usual navigation footer.
 
 ### Frontmatter
 
@@ -252,7 +245,7 @@ Rules:
 7. `考前速查` has three subsections: `### 标准映射公式` (table), `### 解题顺序` (numbered list), `### 易错点` (bullets). Keep it within the course's scope.
 8. Exercises use the same vault-relative wikilink navigation as section files. If the exercise note is last, end with `→ 返回：[[<课程>/<NN>-<课件>/<NN>-<课件>|本章目录]]`.
 9. No screenshots unless a problem depends on a figure that cannot be rebuilt in text.
-10. A standalone exercise note is different from the optional `## 自测题` appendix in the deck index: the former is a full section file; the latter is a 3–6 question appendix.
+10. 练习题 and 自测题 are the same thing. Always write a section file with this format; never append a separate exercise/self-test appendix to the deck index.
 
 ## Screenshots
 
