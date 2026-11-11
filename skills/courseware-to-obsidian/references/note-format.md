@@ -158,6 +158,102 @@ Only when the user asks for them, append to the deck index:
 
 Do not add these sections by default.
 
+## Exercise note format (type: exercise)
+
+Use this when the user asks for 练习题 / 习题集 / 自测题 / 复习题. The exercise note is a regular section file inside the deck folder (its section number continues the deck's numbering), with the usual navigation footer.
+
+### Frontmatter
+
+```yaml
+---
+title: "6.5 保角映射练习题（应试版）"
+type: exercise
+source: "自编·覆盖第六章全部考点"
+tags:
+  - 层级/练习
+  - 课程/复变函数与积分变换
+---
+```
+
+- `type: exercise`, tag `层级/练习` instead of `层级/正文`.
+- `source` = the deck file name when the exercises come from a deck; otherwise state what is covered.
+
+### Body
+
+```markdown
+# 6.5 保角映射练习题（应试版）
+
+> 覆盖：<考点 1>、<考点 2>、…、<考点 n>。
+> 共 N 题，每题后附折叠答案，先做完再点开。
+
+## 考点地图
+
+| 组 | 考点 | 题号 | 应试形式 |
+|----|------|------|----------|
+| A | … | A1–A6 | 填空、判断、小证明 |
+| B | … | B1–B7 | 填空、选择 |
+
+---
+
+## A 组　<考点>
+
+### A1
+<完整题干：条件、选项、题图>
+
+> [!success]- 答案
+> <关键步骤；公式用 $...$ / $$...$$>
+
+### A2
+…
+
+---
+
+## B 组　<考点>
+
+…
+
+---
+
+## 考前速查
+
+### 标准映射公式
+
+| 原区域 | 目标区域 | 映射 |
+|--------|----------|------|
+| … | … | … |
+
+### 解题顺序
+
+1. …
+2. …
+
+### 易错点
+
+- …
+
+---
+
+← 上一节：[[<课程>/<NN>-<课件>/<上一节>|<上一节标题>]]　→ 下一节：[[<课程>/<NN>-<课件>/<下一节>|<下一节标题>]]
+```
+
+Rules:
+
+1. **考点地图 is mandatory.** It lists every group, its problem range, and the exam form. Keep the intro's “共 N 题” and the table in sync whenever problems change.
+2. Group headings are `## A 组　<主题>` with one full-width space `　` after `组`. Problems are `### A1`, `### A2`, …; groups go in increasing difficulty, hardest (压轴) last.
+3. **Every problem shows the full prompt first** — stem, conditions, options, data. The solution goes in `> [!success]- 答案` so it stays folded until the reader tries.
+4. Solutions: key steps, display math, and a short verification (`z=…→…`, boundary/point check) where possible. For true/false items, bold the verdict: `**对**` / `**错**`.
+5. Inside a callout, put a blank `>` line before any table, and keep `>` on every math line:
+   ```markdown
+   > [!success]- 答案
+   > 由 …
+   > $$w=\frac{az+b}{cz+d}.$$
+   ```
+6. End every group with `---`; put `---` after the 考点地图 and before the navigation footer.
+7. `考前速查` has three subsections: `### 标准映射公式` (table), `### 解题顺序` (numbered list), `### 易错点` (bullets). Keep it within the course's scope.
+8. Exercises use the same vault-relative wikilink navigation as section files. If the exercise note is last, end with `→ 返回：[[<课程>/<NN>-<课件>/<NN>-<课件>|本章目录]]`.
+9. No screenshots unless a problem depends on a figure that cannot be rebuilt in text.
+10. A standalone exercise note is different from the optional `## 自测题` appendix in the deck index: the former is a full section file; the latter is a 3–6 question appendix.
+
 ## Screenshots
 
 `courseware_tool.py render <source> <page> <out.png>` writes the PNG. Use:
